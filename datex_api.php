@@ -17,15 +17,16 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-/*
- * Author Koosha Hosseiny
- * info@koosha.cc
+/**
+ * Author Koosha Hosseiny, Drupalion Group
+ * @copyright (c) 2012, Koosha Hosseiny
+ * more info: @see http://www.drupalion.com
+ * contact: info@koosha.cc
  */
 
 /**
  * @file
  * API and helper functions used by other datex modules.
- *
  */
 
 /**
