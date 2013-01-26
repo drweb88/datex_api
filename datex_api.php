@@ -659,7 +659,7 @@ class DatexFormatter {
 /**
  * This class is Jalali equivilant of php DateTime.
  *
- */mv
+ */
 class DatexObject {
 
   private $dateobj;
