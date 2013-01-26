@@ -277,21 +277,21 @@ class DatexFormatter {
     if ($format_map == NULL) {
       $format_map = array(
         'd' => 'dd',
-        'D' => 'LLL',
+        'D' => 'EEE',
         'j' => 'd',
-        'l' => 'LLLL',
+        'l' => 'EEEE',
         'N' => 'e',
         'S' => 'LLLL',
         'w' => '',
         'z' => 'D',
         'W' => 'w',
-        'm' => 'LL',
-        'M' => 'LLL',
+        'm' => 'MM',
+        'M' => 'MMM',
         'F' => 'MMMM',
-        'n' => 'L',
+        'n' => 'M',
         't' => '',
         'L' => '',
-        'o' => 'Y',
+        'o' => 'yyyy',
         'y' => 'yy',
         'Y' => 'YYYY',
         'a' => 'a',
@@ -307,7 +307,7 @@ class DatexFormatter {
         'e' => 'z',
         'I' => '',
         'O' => 'Z',
-        'P' => 'ZZZZZ',
+        'P' => 'ZZZZ',
         'T' => 'v',
         'Z' => '',
         'c' => '',
@@ -317,10 +317,11 @@ class DatexFormatter {
         '-' => '-',
         '.' => '.',
         '-' => '-',
+        ':' => ':',
       );
     }
 
-    $replace_pattern = '/[^ \-\/\.\\\\dDjlNSwzWmMFntLoyYaABgGhHisueIOPTZcrU]/';
+    $replace_pattern = '/[^ \:\-\/\.\\\\dDjlNSwzWmMFntLoyYaABgGhHisueIOPTZcrU]/';
     return strtr(preg_replace($replace_pattern, '', $format), $format_map);
   }
 
@@ -655,10 +656,9 @@ class DatexFormatter {
 }
 
 /**
- * This class is Jalali equivilant of php DateTime. It also has some
- * functionallity from object defiend in Drupal's date module DateObject.
+ * This class is Jalali equivilant of php DateTime.
  *
- */
+ */mv
 class DatexObject {
 
   private $dateobj;
