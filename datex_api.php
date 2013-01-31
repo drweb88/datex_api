@@ -105,22 +105,22 @@ class DatexFormatter {
           'pm' => 'ب.ظ',
         ),
         'day_abbr' => array(
-          1 => 'ش.', // shanbe as sh.
-          'ی.', // ykshnbe as y.
-          'د.', // dshnbe as d.
-          'س.', // seshanbe as s.
-          'چ.', // chehar as ch.
-          'پ.', // panj as p.
-          'ج.', // jom'e as j.
+          6 => 'ش.', // shanbe as sh.
+          7 => 'ی.', // ykshnbe as y.
+          1 => 'د.', // dshnbe as d.
+          2 => 'س.', // seshanbe as s.
+          3 => 'چ.', // chehar as ch.
+          4 => 'پ.', // panj as p.
+          5 => 'ج.', // jom'e as j.
         ),
         'day' => array(
-          1 => 'شنبه', //shanbe
-          'یک‌شنبه', //yeksh
-          'دوشنبه', //doshnbe
-          'سه‌شنبه', //seshnbe
-          'چهارشنبه', //chehar
-          'پنج‌شنبه', //pnj
-          'جمعه', // jome
+          6 => 'شنبه', //shanbe
+          7 => 'یک‌شنبه', //yeksh
+          1 => 'دوشنبه', //doshnbe
+          2 => 'سه‌شنبه', //seshnbe
+          3 => 'چهارشنبه', //chehar
+          4 => 'پنج‌شنبه', //pnj
+          5 => 'جمعه', // jome
         ),
         'tz' => 'تهران',
       );
