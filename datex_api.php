@@ -23,10 +23,12 @@
  * more info: @see http://www.drupalion.com
  * contact: info@koosha.cc
  */
+<?php
 
 /**
  * @file
  * API and helper functions used by other datex modules.
+ *
  */
 
 /**
@@ -62,18 +64,23 @@ class DatexFormatter {
   /**
    * Similar to php date_format
    *
-   * @param mixed $date @see DatexFormatter::getDateObject().
+   * @param mixed $date @see DatexFormatter::get_date_object().
    * @param string $format date format
    * @param boolean $use_intl wheter to use php-intl or not, recomended.
    * @param array &$errors array to put errors in.
    * @return string formatted date.
    */
-  public static function format($date, $format, $use_intl = DATEX_USE_INTL, $formatter_args = NULL, &$error_code = NULL, &$error_message = NULL) {
+  public static function format($date, $format, $tz = NULL, $use_intl = DATEX_USE_INTL, $formatter_args = NULL, &$error_code = NULL, &$error_message = NULL) {
+    if(!$tz) {
+      $tz = date_default_timezone_get();
+    }
+    $tz = new DateTimeZone($tz);
+
     if (self::hasINTL() && $use_intl) {
-      return self::formatINTL($date, $format, $formatter_args, $error_code, $error_message);
+      return self::formatINTL($date, $format, $tz, $formatter_args, $error_code, $error_message);
     }
     else {
-      return self::formatPHP($date, $format);
+      return self::formatPHP($date, $format, $tz);
     }
   }
 
@@ -115,7 +122,7 @@ class DatexFormatter {
         ),
         'day' => array(
           6 => 'شنبه', //shanbe
-          7 => 'یک‌شنبه', //yeksh
+          7 =>'یک‌شنبه', //yeksh
           1 => 'دوشنبه', //doshnbe
           2 => 'سه‌شنبه', //seshnbe
           3 => 'چهارشنبه', //chehar
@@ -334,11 +341,13 @@ class DatexFormatter {
    * @param string $format formats accepted by php format_date
    * @return string formatted date
    */
-  public static function formatPHP($date, $format) {
+  public static function formatPHP($date, $format, $tz) {
     $persian_date_names = self::persianDateNames();
     $number_of_days = array(0, 31, 31, 31, 31, 31, 31, 30, 30, 30, 30, 30, 29);
 
-    $date = self::ObjectFromDate($date);
+    $date = self::ObjectFromDate($date, $tz);
+    $date = self::ObjectFromDate(self::ObjectFromDate($date, $tz)->format('U') + $tz->getOffset($date), $tz);
+    //$offset = $tz->getOffset($date);
     $gregorian_date = array(
       'd' => intval($date->format('j')),
       'm' => intval($date->format('n')),
@@ -460,9 +469,9 @@ class DatexFormatter {
    * @param mixed $date
    * @return DateTime
    */
-  public static function ObjectFromJalali($date = NULL) {
+  public static function ObjectFromJalali($date = NULL, $tz = NULL) {
     if (is_int($date) || is_object($date)) {
-      return self::ObjectFromDate($date);
+      return self::ObjectFromDate($date, $tz);
     }
     elseif (is_array($date)) {
       //we dont touch array indexed 'hour' 'minute' 'second'.
@@ -482,16 +491,15 @@ class DatexFormatter {
    * @param mixed $date
    * @return DateTime
    */
-  public static function ObjectFromDate($date = NULL) {
+  public static function ObjectFromDate($date = NULL, $tz = NULL) {
     if (is_int($date)) {
-      return new DateTime('@' . $date);
+      return new DateTime('@' . $date, $tz);
     }
     elseif (is_string($date)) {
       try {
-        $date = new DateTime($date);
+        $date = new DateTime($date, $tz);
       }
       catch (Exception $e) {
-        throw $e;
         return NULL;
       }
     }
@@ -501,7 +509,7 @@ class DatexFormatter {
         return $date->getDateobjClone();
       }
       elseif ($c == 'DateObject' || $c == 'DateTime') {
-        return $date;
+        return new DateTime('@' . $date->format('U'), $tz);
       }
     }
     elseif (is_array($date)) {
@@ -513,10 +521,10 @@ class DatexFormatter {
         isset($date['minute']) ? intval($date['minute']) : intval(date('i')),
         isset($date['second']) ? intval($date['second']) : intval(date('s')),
       );
-      return new DateTime('@' . mktime($hour, $minute, $second, $month, $day, $year));
+      return new DateTime('@' . mktime($hour, $minute, $second, $month, $day, $year), $tz);
     }
     elseif ($date == NULL) {
-      return new DateTime();
+      return new DateTime(NULL, $tz);
     }
     return NULL;
   }
@@ -575,7 +583,6 @@ class DatexFormatter {
 
   /**
    * @see php date().
-   *
    */
   public static function date($format, $timestamp = NULL) {
     return self::format($timestamp === NULL ? time() : $timestamp, $format);
@@ -583,7 +590,6 @@ class DatexFormatter {
 
   /**
    * @see php mktime().
-   *
    */
   public static function mktime($hour = NULL, $minute = NULL, $second = NULL, $month = NULL, $day = NULL, $year = NULL) {
     $date = self::toGregorian($year, $month, $day);
@@ -636,29 +642,12 @@ class DatexFormatter {
         ));
   }
 
-  /**
-   * Returns an array containing Gregorian date parts from Gregorian iso string,
-   * DateTime should do this but it's buggy.
-   *
-   * @param string $iso Gregorian date in iso format
-   */
-  public static function dateFromIso($iso) {
-    list($date, $time) = explode('T', $iso);
-    $granularities = array();
-    $granularities['year'] = substr($date, 0, 4);
-    $granularities['month'] = substr($date, 5, 2);
-    $granularities['day'] = substr($date, 8, 2);
-    $granularities['hour'] = substr($time, 0, 2);
-    $granularities['minute'] = substr($time, 3, 2);
-    $granularities['second'] = substr($time, 6, 2);
-    $granularities['offset'] = substr($time, 8);
-    return $granularities;
-  }
 }
 
 /**
- * This class is Jalali equivilant of php DateTime.
- *
+ * This class is Jalali equivilant of php DateTime. It also has some
+ * functionallity from object defiend in Drupal's date module DateObject.
+ * It has nothing to do with drupal! Some code is just borrowed
  */
 class DatexObject {
 
@@ -666,6 +655,7 @@ class DatexObject {
   public $error;
   public $error_message;
   public $hasError;
+  public $tz;
   private $format_string;
 
   /**
@@ -685,29 +675,27 @@ class DatexObject {
     $this->setDatetime($datetime, $date_is_gregorian, $tz);
     $format = $format ? $format : 'Y-m-d';
     $this->setFormat($format);
-    if(!is_object($this->dateobj)) {
-      throw new Exception('Datex: creating DateTime Object Failed.');
+    if(!$tz) {
+      try {
+        $this->dateobj->setTimezone(new DateTimeZone(date_default_timezone_get()));
+      }
+      catch (Exception $e) {
+        $this->dateobj->setTimezone(new DateTimeZone('Asia/Tehran'));
+      }
     }
+
     return $this;
   }
 
   /**
-   * Returns Jalali date as string for function like and print, using a default
-   * format.
+   * Magic Function toString
    *
    * @return string
+   * Returns $this->format(), Which will use default format set on object
+   * if set, Otherwise will use default format.
    */
   public function __toString() {
     return $this->format(); //. ' ' . $this->getTimeZone()->getName();
-  }
-
-  /**
-   * over ridig clone otherwise internal DateTime object will point to the same
-   * object and that's bad!
-   *
-   */
-  public function __clone() {
-    $this->dateobj = clone $this->dateobj;
   }
 
   /**
@@ -715,7 +703,7 @@ class DatexObject {
    *
    */
   public function reset() {
-    $this->dateobj = new DateTime();
+    $this->dateobj = new DateTime(NULL, $this->dateobj->getTimezone());
     return $this;
   }
 
@@ -728,7 +716,9 @@ class DatexObject {
    */
   public function format($format = NULL, $use_intl = DATEX_USE_INTL) {
     $format = $format ? $format : $this->format_string;
-    return DatexFormatter::format($this->dateobj, $format, $use_intl, $this->error, $this->error_message);
+    $tz = $this->dateobj->getTimezone();
+    $tz = $tz->getName();
+    return DatexFormatter::format($this->dateobj, $format, $tz, $use_intl, $this->error, $this->error_message);
   }
 
   /**
@@ -753,27 +743,16 @@ class DatexObject {
    */
   public function setDatetime($datetime = NULL, $date_is_gregorian = DEFAULT_DATEXOBJECT_POLICY, $tz = NULL) {
     if ($date_is_gregorian) {
-      $this->dateobj = DatexFormatter::ObjectFromDate($datetime);
+      $this->dateobj = DatexFormatter::ObjectFromDate($datetime, $tz);
     }
     else {
-      $this->dateobj = DatexFormatter::ObjectFromJalali($datetime);
+      $this->dateobj = DatexFormatter::ObjectFromJalali($datetime, $tz);
     }
 
-    if ($tz) {
-      $this->dateobj->setTimezone($tz);
-    }
     return $this;
   }
 
-  /**
-   * similar to php DateTime::setDate
-   *
-   * @param int $year Jalali year
-   * @param int $month Jalali month
-   * @param int $day Jalali day
-   * @return \DatexObject
-   */
-  public function setDate($year = NULL, $month = NULL, $day = NULL) {
+  public function setDate($year = NULL, $month = NULL, $day = NULL, $tz = NULL) {
     $year = $year === NULL ? $this->format('Y') : $year;
     $month = $month === NULL ? $this->format('n') : $month;
     $day = $day === NULL ? $this->format('j') : $day;
@@ -781,6 +760,9 @@ class DatexObject {
     $date = DatexFormatter::toGregorian($year, $month, $day);
 
     $this->xsetDate($date['year'], $date['month'], $date['day']);
+
+    $this->setTimezone($tz);
+
     return $this;
   }
 
@@ -812,11 +794,17 @@ class DatexObject {
   }
 
   /**
-   * @see DateTime::setTimezone
-   *
+   * Sets Time Zone of internal date object. accepts a DateTimeZone Object or
+   * an string representing a timezone.
    */
-  public function setTimezone(DateTimeZone $timezone) {
-    $this->dateobj->setTimezone($timezone);
+  public function setTimezone($timezone) {
+    if (is_string($timezone)) {
+      $this->dateobj->setTimezone(new DateTimeZone($timezone));
+    }
+    else {
+      $this->dateobj->setTimezone($timezone);
+    }
+
     return $this;
   }
 
@@ -867,7 +855,7 @@ class DatexObject {
    *
    */
   public function xgetLastErrors() {
-    return $this->dateobj->getLastErrors();
+    return $this->getLastErrors();
   }
 
   /**
@@ -911,28 +899,6 @@ class DatexObject {
    */
   public function monthLastDay() {
     return DatexObjectUtils::monthLastDay($this->dateobj);
-  }
-
-  /**
-   * Returns an object containing first day of Gregorian month stored in this object.
-   * The gregorian date can later be used by methods like DatexObject::xformat
-   * or DatexObject::getDateobjClone()
-   *
-   * @return DateObject
-   */
-  public function xmonthFirstDay() {
-    return DatexObjectUtils::xmonthFirstDay($this->dateobj);
-  }
-
-  /**
-   * Returns an object containing last day of Gregorian month stored in this object.
-   * The gregorian date can later be used by methods like DatexObject::xformat
-   * or DatexObject::getDateobjClone()
-   *
-   * @return DateObject
-   */
-  public function xmonthLastDay() {
-    return DatexObjectUtils::xmonthLastDay($this->dateobj);
   }
 
   /**
@@ -1049,59 +1015,6 @@ class DatexObject {
     );
   }
 
-  /**
-   * Returns Jalali year stored in object.
-   *
-   * @return int year
-   */
-  public function getYear() {
-    return intval($this->format('Y'));
-  }
-
-  /**
-   * Returns Jalali month stored in object.
-   *
-   * @return int Month
-   */
-  public function getMonth() {
-    return intval($this->format('n'));
-  }
-
-  /**
-   * Retuens Jalali day stored in object.
-   *
-   * @return int day
-   */
-  public function getDay() {
-    return intval($this->format('j'));
-  }
-
-  /**
-   * Returns Gregorian year stored in object.
-   *
-   * @return int year
-   */
-  public function xgetYear() {
-    return intval($this->dateobj->format('Y'));
-  }
-
-  /**
-   * Returns Gregorian month stored in object.
-   *
-   * @return int Month
-   */
-  public function xgetMonth() {
-    return intval($this->dateobj->format('n'));
-  }
-
-  /**
-   * Retuens Gregorian day stored in object.
-   *
-   * @return int day
-   */
-  public function xgetDay() {
-    return intval($this->dateobj->format('j'));
-  }
 }
 
 /**
@@ -1133,28 +1046,6 @@ class DatexObjectUtils {
   }
 
   /**
-   * Returns minumun day of a month
-   *
-   * @param mixed $date @see DatexFormatter::getDateObject
-   */
-  public static function xmonthFirstDay($date = NULL) {
-    $date = DatexFormatter::ObjectFromDate($date);
-    $date->setDate($date->format('Y'), $date->format('n'), 1);
-    return $date;
-  }
-
-  /**
-   * Returns minumun day of a month
-   *
-   * @param mixed $date @see DatexFormatter::getDateObject
-   */
-  public static function xmonthLastDay($date = NULL) {
-    $date = DatexFormatter::ObjectFromDate($date);
-    $date->setDate($date->format('Y'), $date->format('n'), $date->format('t'));
-    return $date;
-  }
-
-  /**
    * Returns granularity parts of a goven date in an array.
    *
    * @param mixed $date @see DatexFormatter::getDateObject
@@ -1181,14 +1072,5 @@ class DatexObjectUtils {
    */
   public static function getJalaliObject($date = NULL) {
     return new DatexObject($date, FALSE);
-  }
-
-  /**
-   * Same as DatexFormatter but returns an object.
-   *
-   * @param string $iso Gregorian date in iso format
-   */
-  public static function dateFromIso($iso) {
-    return new DatexObject(DatexFormatter::dateFromIso($iso));
   }
 }
