@@ -23,7 +23,6 @@
  * more info: @see http://www.drupalion.com
  * contact: info@koosha.cc
  */
-<?php
 
 /**
  * @file
@@ -72,9 +71,20 @@ class DatexFormatter {
    */
   public static function format($date, $format, $tz = NULL, $use_intl = DATEX_USE_INTL, $formatter_args = NULL, &$error_code = NULL, &$error_message = NULL) {
     if(!$tz) {
-      $tz = date_default_timezone_get();
+      $tz = new DateTimeZone(date_default_timezone_get());
     }
-    $tz = new DateTimeZone($tz);
+    elseif(is_string($tz)) {
+      try{
+        $tz = new DateTimeZone($tz);
+      }
+      catch (Exception $e) {
+        return;
+      }
+    }
+
+    if(get_class($tz) !== 'DateTimeZone') {
+      return;
+    }
 
     if (self::hasINTL() && $use_intl) {
       return self::formatINTL($date, $format, $tz, $formatter_args, $error_code, $error_message);
@@ -424,7 +434,7 @@ class DatexFormatter {
    * @param string $format
    * @return string
    */
-  public static function formatINTL($date, $format, $formatter_args = NULL, &$error_code = NULL, &$error_message = NULL) {
+  public static function formatINTL($date, $format, $tz, $formatter_args = NULL, &$error_code = NULL, &$error_message = NULL) {
     static $intl_formatter = NULL;
     if ($intl_formatter == NULL || isset($formatter_args)) {
       if (isset($formatter_args)) {
@@ -647,7 +657,7 @@ class DatexFormatter {
 /**
  * This class is Jalali equivilant of php DateTime. It also has some
  * functionallity from object defiend in Drupal's date module DateObject.
- * It has nothing to do with drupal! Some code is just borrowed
+ *
  */
 class DatexObject {
 
